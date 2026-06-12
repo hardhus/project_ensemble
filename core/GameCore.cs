@@ -5,7 +5,7 @@ using Project_Ensemble.Client;
 
 namespace Project_Ensemble.Core {
   public class GameCore : Game {
-    private GraphicsDeviceManager _graphics;
+    private GraphicsDeviceManager? _graphics;
     private readonly bool _isHeadless;
 
     private ServerEngine? _serverEngine;

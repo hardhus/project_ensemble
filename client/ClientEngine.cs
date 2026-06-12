@@ -1,4 +1,5 @@
 using LiteNetLib;
+using LiteNetLib.Utils;
 using Project_Ensemble.Shared;
 
 namespace Project_Ensemble.Client {
@@ -50,6 +51,17 @@ namespace Project_Ensemble.Client {
     public void Disconnect() {
       _netManager.Stop();
       _serverPeer = null;
+    }
+
+    public void SendInput(IClientInput input) {
+      if (!IsConnected || _serverPeer == null) return;
+
+      NetDataWriter writer = new NetDataWriter();
+
+      writer.Put(input.InputTypeId);
+      input.Serialize(writer);
+
+      _serverPeer.Send(writer, DeliveryMethod.Sequenced);
     }
   }
 }

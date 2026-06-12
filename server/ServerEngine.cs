@@ -12,6 +12,8 @@ namespace Project_Ensemble.Server {
 
     private uint _nextEntityId = 1;
 
+    public event Action<uint, IClientInput>? OnInputReceived;
+
     public ServerEngine() {
       _listener = new EventBasedNetListener();
       _netManager = new NetManager(_listener) {
@@ -41,7 +43,19 @@ namespace Project_Ensemble.Server {
       };
 
       _listener.NetworkReceiveEvent += (fromPeer, reader, channel, deliveryMethod) => {
-        // İstemci girdileri burada işlenecek
+        try {
+          byte inputTypeId = reader.GetByte();
+
+          IClientInput? input = NetworkRegistry.DeserializeInput(inputTypeId, reader);
+
+          if (input != null) {
+            if (ClientRegistry.TryGetValue(fromPeer.Id, out uint entityId)) {
+              OnInputReceived?.Invoke(entityId, input);
+            }
+          }
+        } catch (Exception ex) {
+          Console.WriteLine($"[SERVER] Girdi paketi okuma hatası: {ex.Message}");
+        }
       };
 
       Console.WriteLine($"[SERVER] UDP Sunucusu {port} portunda başlatıldı.");

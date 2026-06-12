@@ -37,7 +37,7 @@ namespace Project_Ensemble.Shared {
         for (int j = 0; j < componentCount; j++) {
           byte componentId = reader.GetByte();
 
-          INetworkComponent component = NetworkRegistry.DeserializeComponent(componentId, reader);
+          INetworkComponent? component = NetworkRegistry.DeserializeComponent(componentId, reader);
 
           if (component != null) {
             componentsList.Add(component);
