@@ -44,12 +44,12 @@ namespace Project_Ensemble.Gameplay {
       base.Initialize();
     }
 
-    public void StartGameNetwork(bool isHost) {
+    public void StartGameNetwork(bool isHost, string customIp) {
       if (isHost) {
         StartServer(65432);
         Server!.OnInputReceived += (entityId, input) => OnServerInputReceived?.Invoke(entityId, input, this);
       }
-      ConnectClient("127.0.0.1", 65432);
+      ConnectClient(customIp, 65432);
     }
 
     public void StopGameNetwork() {

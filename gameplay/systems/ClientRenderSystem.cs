@@ -1,6 +1,10 @@
+using System.Collections.Generic;
+using Project_Ensemble.Client;
+using Project_Ensemble.Server;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Project_Ensemble.Shared;
 using Project_Ensemble.Gameplay.Components;
 using Project_Ensemble.Gameplay.Inputs;
 using Project_Ensemble.Gameplay.Ui;
@@ -15,13 +19,15 @@ namespace Project_Ensemble.Gameplay.Systems {
     private SimpleButton? _btnJoin;
     private SimpleButton? _btnResume;
     private SimpleButton? _btnQuit;
+    private SimpleTextBox? _txtIpInput;
 
     public void Initialize(EnsembleSandbox game) {
       _btnSinglePlayer = new SimpleButton(540, 250, 200, 50, "Tek Oyunculu");
       _btnMultiplayer = new SimpleButton(540, 330, 200, 50, "Cok Oyunculu");
 
-      _btnHost = new SimpleButton(540, 250, 200, 50, "Sunucu Olustur");
-      _btnJoin = new SimpleButton(540, 330, 200, 50, "Sunucuya Katil");
+      _btnHost = new SimpleButton(540, 220, 200, 50, "Sunucu Olustur");
+      _txtIpInput = new SimpleTextBox(540, 290, 200, 40);
+      _btnJoin = new SimpleButton(540, 350, 200, 50, "Sunucuya Katil");
 
       _btnResume = new SimpleButton(540, 250, 200, 50, "Devam Et (ESC)");
       _btnQuit = new SimpleButton(540, 330, 200, 50, "Ana Menuye Don");
@@ -37,7 +43,7 @@ namespace Project_Ensemble.Gameplay.Systems {
 
         if (_btnSinglePlayer!.IsClicked(mouseState, _lastMouseState)) {
           game.IsSinglePlayer = true;
-          game.StartGameNetwork(isHost: true);
+          game.StartGameNetwork(isHost: true, "127.0.0.1");
           game.CurrentState = SandboxState.InGame;
         } else if (_btnMultiplayer!.IsClicked(mouseState, _lastMouseState)) {
           game.IsSinglePlayer = false;
@@ -46,12 +52,14 @@ namespace Project_Ensemble.Gameplay.Systems {
       } else if (game.CurrentState == SandboxState.LobbyMenu) {
         _btnHost?.Update(mouseState);
         _btnJoin?.Update(mouseState);
+        _txtIpInput?.Update(mouseState, keyboard);
 
         if (_btnHost!.IsClicked(mouseState, _lastMouseState)) {
-          game.StartGameNetwork(isHost: true);
+          game.StartGameNetwork(isHost: true, "127.0.0.1");
           game.CurrentState = SandboxState.InGame;
         } else if (_btnJoin!.IsClicked(mouseState, _lastMouseState)) {
-          game.StartGameNetwork(isHost: false);
+          string customIp = _txtIpInput != null ? _txtIpInput.Text : "127.0.0.1";
+          game.StartGameNetwork(isHost: false, customIp);
           game.CurrentState = SandboxState.InGame;
         }
       } else if (game.CurrentState == SandboxState.InGame) {
@@ -88,6 +96,7 @@ namespace Project_Ensemble.Gameplay.Systems {
         _btnMultiplayer?.Draw(spriteBatch, game.WhitePixelRef!, game.GameFontRef);
       } else if (game.CurrentState == SandboxState.LobbyMenu) {
         _btnHost?.Draw(spriteBatch, game.WhitePixelRef!, game.GameFontRef);
+        _txtIpInput?.Draw(spriteBatch, game.WhitePixelRef!, game.GameFontRef);
         _btnJoin?.Draw(spriteBatch, game.WhitePixelRef!, game.GameFontRef);
       } else if (game.CurrentState == SandboxState.InGame || game.CurrentState == SandboxState.Paused) {
         if (game.ClientEngineRef != null) {

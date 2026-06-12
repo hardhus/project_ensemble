@@ -1,12 +1,18 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using LiteNetLib;
 using LiteNetLib.Utils;
 using Microsoft.Xna.Framework;
 using Project_Ensemble.Shared;
+using Open.Nat;
 
 namespace Project_Ensemble.Server {
   public class ServerEngine {
     private readonly NetManager _netManager;
     private readonly EventBasedNetListener _listener;
+    private Mapping? _portMapping;
 
     public Dictionary<uint, List<INetworkComponent>> WorldState { get; } = new();
     public Dictionary<int, uint> ClientRegistry { get; } = new();
@@ -24,6 +30,27 @@ namespace Project_Ensemble.Server {
 
     public void Start(int port) {
       _netManager.Start(port);
+
+      Task.Run(async () => {
+        try {
+          var discoverer = new NatDiscoverer();
+
+          using (var cts = new CancellationTokenSource(5000)) {
+            var device = await discoverer.DiscoverDeviceAsync(PortMapper.Upnp, cts);
+
+            if (device != null) {
+              _portMapping = new Mapping(Protocol.Udp, port, port, "Project Ensemble Server");
+              await device.CreatePortMapAsync(_portMapping);
+
+              var externalIp = await device.GetExternalIPAsync();
+              Console.WriteLine($"[SERVER] UPnP basarili! {port} UDP portu modemde otomatik acildi.");
+              Console.WriteLine($"[SERVER] Arkadasinin baglanacagi Dis (Internet) IP: {externalIp}");
+            }
+          }
+        } catch (Exception ex) {
+          Console.WriteLine($"[SERVER] UPnP port acilamadi (Modemde UPnP kapali veya desteklemiyor): {ex.Message}");
+        }
+      });
 
       _listener.ConnectionRequestEvent += request => {
         request.AcceptIfKey("EnsembleSecretKey");
@@ -50,7 +77,6 @@ namespace Project_Ensemble.Server {
       _listener.NetworkReceiveEvent += (fromPeer, reader, channel, deliveryMethod) => {
         try {
           byte inputTypeId = reader.GetByte();
-
           IClientInput? input = NetworkRegistry.DeserializeInput(inputTypeId, reader);
 
           if (input != null) {
@@ -81,6 +107,19 @@ namespace Project_Ensemble.Server {
     }
 
     public void Stop() {
+      if (_portMapping != null) {
+        try {
+          var discoverer = new NatDiscoverer();
+
+          using (var cts = new CancellationTokenSource(2000)) {
+            var device = discoverer.DiscoverDeviceAsync(PortMapper.Upnp, cts).Result;
+            if (device != null) {
+              device.DeletePortMapAsync(_portMapping).Wait();
+              Console.WriteLine("[SERVER] UPnP port haritasi modemden temizlendi.");
+            }
+          }
+        } catch { }
+      }
       _netManager.Stop();
     }
   }
