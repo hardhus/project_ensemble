@@ -1,5 +1,6 @@
 using LiteNetLib;
 using LiteNetLib.Utils;
+using Microsoft.Xna.Framework;
 using Project_Ensemble.Shared;
 
 namespace Project_Ensemble.Server {
@@ -31,7 +32,11 @@ namespace Project_Ensemble.Server {
       _listener.PeerConnectedEvent += peer => {
         Console.WriteLine($"[SERVER] Yeni istemci bağlandı! ID: {peer.Id}");
         uint entityId = _nextEntityId++;
-        WorldState[entityId] = new List<INetworkComponent>();
+        var initialPosition = new Gameplay.Components.NetPosition {
+          Position = new Vector2(640, 360)
+        };
+
+        WorldState[entityId] = new List<INetworkComponent> { initialPosition };
         ClientRegistry[peer.Id] = entityId;
       };
 

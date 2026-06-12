@@ -1,22 +1,15 @@
-using System;
-using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 using Project_Ensemble.Server;
 using Project_Ensemble.Client;
-using Project_Ensemble.Shared;
 
 namespace Project_Ensemble.Core {
   public class GameCore : Game {
-    private GraphicsDeviceManager? _graphics;
-    private SpriteBatch? _spriteBatch;
-    private Texture2D? _whitePixel;
+    protected GraphicsDeviceManager? _graphics;
 
-    private readonly bool _isHeadless;
-    private ServerEngine? _serverEngine;
-    private ClientEngine? _clientEngine;
+    public ServerEngine? Server { get; private set; }
+    public ClientEngine? Client { get; private set; }
 
+    protected readonly bool _isHeadless;
     private double _serverTickInterval = 1.0 / 30.0;
     private double _serverTickTimer = 0.0;
 
@@ -36,89 +29,35 @@ namespace Project_Ensemble.Core {
       }
     }
 
+    protected void StartServer(int port) {
+      Server = new ServerEngine();
+      Server.Start(port);
+    }
+
+    protected void ConnectClient(string host, int port) {
+      Client = new ClientEngine();
+      Client.Connect(host, port);
+    }
+
     protected override void Initialize() {
-      // === 1. ADIM: FRAMEWORK'E BİLEŞENLERİ KAYDET ===
-      NetworkRegistry.RegisterComponent<NetPosition>();
-      NetworkRegistry.RegisterInput<MovementInput>();
-
-      if (_isHeadless) {
-        _serverEngine = new ServerEngine();
-        // Sunucu girdileri yakaladığında ne yapacağını bağlıyoruz
-        _serverEngine.OnInputReceived += Server_HandleInput;
-        _serverEngine.Start(65432);
-      } else {
-        _serverEngine = new ServerEngine();
-        _serverEngine.OnInputReceived += Server_HandleInput;
-        _serverEngine.Start(65432);
-
-        _clientEngine = new ClientEngine();
-        _clientEngine.Connect("127.0.0.1", 65432);
-      }
-
       base.Initialize();
-    }
-
-    protected override void LoadContent() {
-      if (!_isHeadless) {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-        _whitePixel = new Texture2D(GraphicsDevice, 1, 1);
-        _whitePixel.SetData(new[] { Color.White });
-      }
-    }
-
-    private void Server_HandleInput(uint entityId, IClientInput input) {
-      if (input is MovementInput moveInput && _serverEngine != null) {
-        if (_serverEngine.WorldState.TryGetValue(entityId, out var components)) {
-          NetPosition netPos = new NetPosition { Position = new Vector2(400, 300) };
-          bool found = false;
-
-          for (int i = 0; i < components.Count; i++) {
-            if (components[i] is NetPosition p) {
-              netPos = p;
-              components.RemoveAt(i);
-              found = true;
-              break;
-            }
-          }
-          float speed = 8.0f;
-          netPos.Position += moveInput.Direction * speed;
-
-          components.Add(netPos);
-        }
-      }
     }
 
     protected override void Update(GameTime gameTime) {
       double deltaTime = gameTime.ElapsedGameTime.TotalSeconds;
 
-      // SERVER LOOP
-      if (_serverEngine != null) {
-        _serverEngine.Update();
+      if (Server != null) {
+        Server.Update();
 
         _serverTickTimer += deltaTime;
         if (_serverTickTimer >= _serverTickInterval) {
           _serverTickTimer -= _serverTickInterval;
-          _serverEngine.BroadcastWorldState();
+          Server.BroadcastWorldState();
         }
       }
 
-      // ClIENT LOOP
-      if (_clientEngine != null) {
-        _clientEngine.Update();
-
-        var keyboard = Keyboard.GetState();
-        Vector2 dir = Vector2.Zero;
-
-        if (keyboard.IsKeyDown(Keys.W)) dir.Y -= 1;
-        if (keyboard.IsKeyDown(Keys.S) || keyboard.IsKeyDown(Keys.Down)) dir.Y += 1;
-        if (keyboard.IsKeyDown(Keys.A) || keyboard.IsKeyDown(Keys.Left)) dir.X -= 1;
-        if (keyboard.IsKeyDown(Keys.D) || keyboard.IsKeyDown(Keys.Right)) dir.X += 1;
-
-        if (dir != Vector2.Zero) {
-          dir.Normalize();
-          _clientEngine.SendInput(new MovementInput { Direction = dir });
-        }
+      if (Client != null) {
+        Client.Update();
       }
 
       if (_isHeadless) {
@@ -128,32 +67,9 @@ namespace Project_Ensemble.Core {
       base.Update(gameTime);
     }
 
-    protected override void Draw(GameTime gameTime) {
-      if (_isHeadless || _spriteBatch == null || _whitePixel == null || _clientEngine == null) return;
-
-      GraphicsDevice.Clear(Color.Black);
-
-      _spriteBatch.Begin();
-
-      foreach (var kvp in _clientEngine.LocalWorldState) {
-        uint entityId = kvp.Key;
-        List<INetworkComponent> components = kvp.Value;
-
-        foreach (var comp in components) {
-          if (comp is NetPosition netPos) {
-            _spriteBatch.Draw(_whitePixel, new Rectangle((int)netPos.Position.X, (int)netPos.Position.Y, 50, 50), Color.CornflowerBlue);
-          }
-        }
-      }
-
-      _spriteBatch.End();
-
-      base.Draw(gameTime);
-    }
-
     protected override void OnExiting(object sender, ExitingEventArgs args) {
-      _serverEngine?.Stop();
-      _clientEngine?.Disconnect();
+      Server?.Stop();
+      Client?.Disconnect();
       base.OnExiting(sender, args);
     }
   }

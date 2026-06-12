@@ -24,11 +24,11 @@ namespace Project_Ensemble.Client {
       _serverPeer = _netManager.Connect(host, port, "EnsembleSecretKey");
 
       _listener.PeerConnectedEvent += peer => {
-        Console.WriteLine($"[CLIENT] Sunucuya başarıyla bağlanıldı! Sunucu ID: {peer.Id}");
+        Console.WriteLine($"[CLIENT] Sunucuya basariyla baglanildi! Sunucu ID: {peer.Id}");
       };
 
       _listener.PeerDisconnectedEvent += (peer, disconnectInfo) => {
-        Console.WriteLine($"[CLIENT] Sunucu ile bağlantı koptu: {disconnectInfo.Reason}");
+        Console.WriteLine($"[CLIENT] Sunucu ile baglanti koptu: {disconnectInfo.Reason}");
         _serverPeer = null;
         LocalWorldState.Clear();
       };
@@ -39,7 +39,7 @@ namespace Project_Ensemble.Client {
           packet.Deserialize(reader);
           LocalWorldState = packet.WorldData;
         } catch (Exception ex) {
-          Console.WriteLine($"[CLIENT] Paket okuma hatası: {ex.Message}");
+          Console.WriteLine($"[CLIENT] Paket okuma hatasi: {ex.Message}");
         }
       };
     }
@@ -57,7 +57,6 @@ namespace Project_Ensemble.Client {
       if (!IsConnected || _serverPeer == null) return;
 
       NetDataWriter writer = new NetDataWriter();
-
       writer.Put(input.InputTypeId);
       input.Serialize(writer);
 
