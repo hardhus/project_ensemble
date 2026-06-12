@@ -20,8 +20,6 @@ namespace Project_Ensemble.Core {
       } else {
         Console.WriteLine("[BOOT] Server mode started (Headless Mode)");
       }
-
-
     }
 
     protected override void Initialize() {
