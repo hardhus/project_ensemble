@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using LiteNetLib.Utils;
 
 namespace Project_Ensemble.Shared {
@@ -18,7 +16,7 @@ namespace Project_Ensemble.Shared {
       Console.WriteLine($"[NetworkRegistry] Bileşen Kaydedildi -> ID: {id}, Tür: {typeof(T).Name}");
     }
 
-    public static INetworkComponent DeserializeComponent(byte componentId, NetDataReader reader) {
+    public static INetworkComponent? DeserializeComponent(byte componentId, NetDataReader reader) {
       if (!_componentFactories.TryGetValue(componentId, out var factory)) {
         Console.WriteLine($"[NetworkRegistry] [HATA] Bilinmeyen Bileşen ID'si: {componentId}");
         return null;
